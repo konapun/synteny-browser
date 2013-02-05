@@ -1,22 +1,18 @@
 var SyntenyBrowser = function(div, opts) {
-	/* Set up scaffolding */
-	var
-	topBrowsers = document.createElement('div'),
-	bottomBrowsers = document.createElement('div'),
-	syntenyArea = document.createElement('div'),
-	syntenyCanvas = document.createElement('canvas');
+	var canvas = document.createElement('canvas');
+	div.appendChild(canvas);
 	
-	syntenyArea.appendChild(syntenyCanvas);
-	div.appendChild(topBrowsers);
-	div.appendChild(syntenyArea);
-	div.appendChild(bottomBrowsers);
+	var syntenyHeight = 200, width = 1000;
+	if (typeof opts !== 'undefined') {
+		syntenyHeight = opts.syntenyHeight || syntenyHeight;
+		width = opts.width || width;
+	}
 	
+	this.canvas = canvas;
 	this.syntenyBrowser = div;
-	this.topArea = topBrowsers;
-	this.bottomArea = bottomBrowsers;
 	this.browsers = [];
-	this.syntenyHeight = 200;
-	this.width = 1000;
+	this.syntenyHeight = syntenyHeight;
+	this.width = width;
 };
 
 SyntenyBrowser.prototype = function() {
@@ -39,14 +35,7 @@ SyntenyBrowser.prototype = function() {
 	draw = function() {
 		var loadTop = true;
 		for (var i = 0, length = this.browsers.length; i < length; i++) {
-			var
-			loadArea = loadTop ? this.topArea : this.bottomArea,
-			browser = this.browsers[i],
-			canvas = browser.scribl.canvas;
-			
-			loadArea.appendChild(canvas);
-			browser.scribl.draw();
-			loadTop = !loadTop;
+			this.browsers[i].draw();
 		}
 		
 		return mergeCanvases(this);
@@ -55,7 +44,7 @@ SyntenyBrowser.prototype = function() {
 	/* Private functions */
 	mergeCanvases = function(caller) {
 		var
-		merged = document.createElement('canvas'),
+		merged = caller.canvas,//document.createElement('canvas'),
 		ctx = merged.getContext('2d');
 		
 		var height = caller.syntenyHeight;
@@ -65,6 +54,7 @@ SyntenyBrowser.prototype = function() {
 		
 		merged.height = height;
 		merged.width = caller.browsers[0].scribl.canvas.width;
+		ctx.clearRect(0, 0, merged.width, merged.height);
 		
 		var
 		yTop = 0,
@@ -88,9 +78,6 @@ SyntenyBrowser.prototype = function() {
 			}
 		}
 		
-		$(caller.syntenyBrowser).empty();
-		caller.syntenyBrowser.appendChild(merged);
-		
 		return merged;
 	};
 	
@@ -108,22 +95,109 @@ SyntenyBrowser.Browser = function(browser, canvas, sequence, start) {
 	
 	track.addFeature(new Seq('sequence', start, start + sequence.length, sequence));
 	track.hide = true;
-		
+	
 	this.scribl = scribl;
 	this.browser = browser;
 	this.sequence = sequence;
+	this.start = start;
+	this.regions = [];
 };
 
 SyntenyBrowser.Browser.prototype = function() {
 	var
 	selectRegion = function(start, end) {
+		var region = new SyntenyBrowser.Region(this, start, end);
+		this.regions.push(region);
+		
+		region.draw();
+		this.browser.draw();
+		
+		return region;
+	},
+	draw = function() {
+		var scriblCanvas = this.scribl.canvas;
+		scriblCanvas.getContext('2d').clearRect(0, 0, scriblCanvas.width, scriblCanvas.height);
+		this.scribl.draw();
+		for (var i = 0; i < this.regions.length; i++) {
+			this.regions[i].draw();
+		}
+	};
+	
+	return {
+		selectRegion: selectRegion,
+		draw: draw
+	};
+}();
+
+SyntenyBrowser.Region = function(regionOwner, start, end) {
+	this.owner = regionOwner;
+	this.start = start;
+	this.end = end;
+};
+
+SyntenyBrowser.Region.prototype = function() {
+	var
+	sequence = function() {
 		var
-		scribl = this.scribl,
+		owner = this.owner,
+		seqStart = owner.start,
+		regionStart = this.start,
+		regionEnd = this.end,
+		sequence = owner.sequence;
+		
+		return sequence.substring(regionStart - seqStart, regionEnd - seqStart);
+	},
+	compareWith = function(region) {
+		var
+		that = this,
+		seq1 = this.sequence(),
+		seq2 = region.sequence(),
+		alignment = runAligner(seq1, seq2, function(results) {
+			if (results === 'error') {
+				console.log("Alignment failed");
+			}
+			else {
+				console.log("Got results " + results);
+				var
+				alignment = new SyntenyBrowser.Alignment(results, results),
+				canvas = that.owner.browser.draw();
+				
+				alignment.draw(canvas);
+				projectToAlignment(that, canvas, alignment);
+				projectToAlignment(region, canvas, alignment);
+			}
+		});
+	},
+	clear = function() {
+		var
+		owner = this.owner,
+		browser = owner.browser;
+		
+		for (var i = 0, len = owner.regions.length; i < len; i++) {
+			var region = owner.regions[i];
+			
+			if (region == this) {
+				var
+				found = owner.regions.splice(i, 1),
+				canvas = browser.canvas,
+				ctx = canvas.getContext('2d');
+				
+				browser.draw();
+				return found;
+			}
+		}
+	},
+	draw = function() {
+		var
+		start = this.start,
+		end = this.end,
+		owner = this.owner,
+		scribl = owner.scribl,
 		scriblCanvas = scribl.canvas,
 		ctx = scriblCanvas.getContext('2d'),
 		scaleStart = scribl.scale.min,
 		scaleEnd = scribl.scale.max,
-		region = new SyntenyBrowser.Region(this, this.browser.syntenyCanvas, start, end),
+		region = this,
 		pxPerNucs = scribl.pixelsToNts(),
 		padding = 15,
 		drawStartX = padding + (start * pxPerNucs),
@@ -138,47 +212,26 @@ SyntenyBrowser.Browser.prototype = function() {
 		region.drawEndX = drawEndX;
 		region.drawStartY = drawStartY;
 		region.drawEndY = drawEndY;
-		
-		this.browser.draw();
-		
-		return region;
-	};
-	
-	return {
-		selectRegion: selectRegion
-	};
-}();
-
-SyntenyBrowser.Region = function(regionOwner, start, end) {
-	this.owner = regionOwner;
-	this.start = start;
-	this.end = end;
-};
-
-SyntenyBrowser.Region.prototype = function() {
-	var
-	sequence = function() {
-		//return this.owner.
-		//TODO
-		return 'ACTGCAG';
-	},
-	compareWith = function(region) {
-		var
-		seq1 = this.sequence(),
-		seq2 = region.sequence(),
-		alignServiceBase = 'http://www.ebi.ac.uk/Tools/services/wublast/';
-		
-		//TODO: the alignment
-		var
-		alignment = new SyntenyBrowser.Alignment(seq1, seq2),
-		canvas = this.owner.browser.draw();
-		
-		alignment.draw(canvas);
-		projectToAlignment(this, canvas, alignment);
-		projectToAlignment(region, canvas, alignment);
 	},
 	
 	/* private functions */
+	runAligner = function(seq1, seq2, onDone) {
+		var
+		results,
+		alignService = 'pairwise_align.php?sequence1=' + seq1 + '&sequence2=' + seq2;
+		
+		$.ajax({
+			url: alignService,
+			success: function(data) {
+				results = data;
+			},
+			error: function() {
+				results = 'error';
+			}
+		}).done(function() {
+			onDone(results);
+		});
+	},
 	projectToAlignment = function(caller, canvas, alignment) {
 		var
 		ctx = canvas.getContext('2d'),
@@ -213,11 +266,12 @@ SyntenyBrowser.Region.prototype = function() {
 	
 	return {
 		sequence: sequence,
-		compareWith: compareWith
+		compareWith: compareWith,
+		clear: clear,
+		draw: draw
 	};
 }();
 
-/* Internal Objects */
 SyntenyBrowser.Alignment = function(seq1, seq2) {
 	this.seq1 = seq1;
 	this.seq2 = seq2;
@@ -227,7 +281,7 @@ SyntenyBrowser.Alignment = function(seq1, seq2) {
 SyntenyBrowser.Alignment.prototype = function() {
 	var
 	clear = function() {
-		
+		//TODO i
 	},
 	draw = function(canvas) {
 		var
@@ -264,7 +318,7 @@ SyntenyBrowser.Alignment.prototype = function() {
 		this.drawStartY = drawStartY;
 		this.drawEndY = drawEndY;
 		ctx.drawImage(scriblCanvas, drawStartX - paddingX, drawStartY);
-	};
+	}; 
 	
 	return {
 		clear: clear,
