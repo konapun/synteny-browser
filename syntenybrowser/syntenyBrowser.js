@@ -96,6 +96,9 @@ SyntenyBrowser.Browser = function(browser, canvas, sequence, start) {
 	track.addFeature(new Seq('sequence', start, start + sequence.length, sequence));
 	track.hide = true;
 	
+	scribl.scale.min = start;
+	scribl.scale.max = start + sequence.length;
+	
 	this.scribl = scribl;
 	this.browser = browser;
 	this.sequence = sequence;
@@ -189,14 +192,14 @@ SyntenyBrowser.Region.prototype = function() {
 	},
 	draw = function() {
 		var
-		start = this.start,
-		end = this.end,
 		owner = this.owner,
+		start = this.start - owner.start,
+		end = this.end - owner.start,
 		scribl = owner.scribl,
 		scriblCanvas = scribl.canvas,
 		ctx = scriblCanvas.getContext('2d'),
 		scaleStart = scribl.scale.min,
-		scaleEnd = scribl.scale.max,
+		scaleEnd = scribl.scale.max, //FIXME: NOT the same as scaleStart + owner.sequence.length, throws off pxpernucs too
 		region = this,
 		pxPerNucs = scribl.pixelsToNts(),
 		padding = 15,
@@ -288,23 +291,26 @@ SyntenyBrowser.Alignment.prototype = function() {
 		ctx = canvas.getContext('2d'),
 		scriblCanvas = document.createElement('canvas');
 		
-		scriblCanvas.width = 500;
+		scriblCanvas.width = 900;
 		var
 		scribl = new Scribl(scriblCanvas, scriblCanvas.width),
 		seqlen = this.seq1.length > this.seq2.length ? this.seq1.length : this.seq2.length;
-		proposedWidth = this.pxPerNuc * seqlen;
+		proposedWidth = this.pxPerNuc * seqlen,
+		seqGlyph1 = scribl.addFeature(new Seq('sequence1', 0, this.seq1.length, this.seq1)),
+		seqGlyph2 = scribl.addFeature(new Seq('sequence2', 0, this.seq2.length, this.seq2));
+		
+		scribl.laneSizes = 18;
+		scribl.scale.off = true;
 		if (proposedWidth < scriblCanvas.width) {
 			//TODO
 		}
-		
-		scribl.scale.off = true;
-		scribl.addFeature(new Seq('sequence1', 0, this.seq1.length, this.seq1));
-		scribl.addFeature(new Seq('sequence2', 0, this.seq2.length, this.seq2));
 		scribl.draw();
 		
+		//FIXME: use glyph.getPixelPositionX and glyph.getPixelPositionY for position calculations
+		//FIXME: seq.getHeight(), seq.getPixelLength()
 		var
 		scriblCanvas = scribl.canvas,
-		paddingX = 10,
+		paddingX = 12,
 		paddingY = 25,
 		centerX = canvas.width / 2,
 		centerY = canvas.height / 2;
