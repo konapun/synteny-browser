@@ -251,9 +251,11 @@ SyntenyBrowser.Region.prototype = function() {
 		regionY1 = caller.owner.top + caller.drawStartY,
 		regionX2 = caller.drawEndX,
 		regionY2 = caller.owner.top + caller.drawEndY,
-		alignmentX1 = alignment.drawStartX + 12,
+		alignment1X1 = alignment.drawStartX1 + 12,
+		alignment1X2 = alignment.drawEndX1 + 12,
+		alignment2X1 = alignment.drawStartX2 + 12,
+		alignment2X2 = alignment.drawEndX2 + 12,
 		alignmentY1 = alignment.drawStartY,
-		alignmentX2 = alignment.drawEndX + 12,
 		alignmentY2 = alignment.drawEndY;
 		
 		if (alignment.seq1.length > 0) { // don't project to empty alignment
@@ -261,15 +263,15 @@ SyntenyBrowser.Region.prototype = function() {
 			ctx.beginPath();
 			if (caller.owner.browser.browsers.indexOf(caller.owner)%2 == 0) { // project from bottom			
 				ctx.moveTo(regionX1, regionY2);
-				ctx.lineTo(alignmentX1, alignmentY1);
-				ctx.lineTo(alignmentX2, alignmentY1);
+				ctx.lineTo(alignment1X1, alignmentY1);
+				ctx.lineTo(alignment1X2, alignmentY1);
 				ctx.lineTo(regionX2, regionY2);
 				ctx.lineTo(regionX1, regionY2);
 			}
 			else { // project from top
 				ctx.moveTo(regionX1, regionY1);
-				ctx.lineTo(alignmentX1, alignmentY2);
-				ctx.lineTo(alignmentX2, alignmentY2);
+				ctx.lineTo(alignment2X1, alignmentY2);
+				ctx.lineTo(alignment2X2, alignmentY2);
 				ctx.lineTo(regionX2, regionY1);
 				ctx.lineTo(regionX1, regionY1);
 			}
@@ -322,17 +324,21 @@ SyntenyBrowser.Alignment.prototype = function() {
 		paddingY = 25,
 		centerX = canvas.width / 2,
 		centerY = canvas.height / 2,
-		drawStartX = (scriblCanvas.width / 2) - (scribl.width / 2),
-		drawEndX = drawStartX + seqGlyph1.getPixelLength(),
+		drawStartX1 = (scriblCanvas.width / 2) - (scribl.width / 2),
+		drawEndX1 = drawStartX1 + seqGlyph1.getPixelLength(),
+		drawStartX2 = drawStartX1,
+		drawEndX2 = drawStartX2 + seqGlyph2.getPixelLength(),
 		drawStartY = centerY - scriblCanvas.height/2,
 		drawEndY = drawStartY + scribl.getHeight() - paddingY;
 		
-		this.drawStartX = drawStartX;
-		this.drawEndX = drawEndX;
+		this.drawStartX1 = drawStartX1;
+		this.drawEndX1 = drawEndX1;
+		this.drawStartX2 = drawStartX2;
+		this.drawEndX2 = drawEndX2;
 		this.drawStartY = drawStartY;
 		this.drawEndY = drawEndY;
 		
-		ctx.drawImage(scriblCanvas, drawStartX, drawStartY);
+		ctx.drawImage(scriblCanvas, drawStartX1, drawStartY);
 	}; 
 	
 	return {
