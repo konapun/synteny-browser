@@ -225,11 +225,13 @@ SyntenyBrowser.Region.prototype = function() {
 	/* private functions */
 	runAligner = function(seq1, seq2, onDone) {
 		var
+		done,
 		results,
 		alignService = 'pairwise_align.php?sequence1=' + seq1 + '&sequence2=' + seq2;
 		
 		$.ajax({
 			url: alignService,
+			async: false,
 			success: function(data) {
 				results = data;
 			},
@@ -237,8 +239,10 @@ SyntenyBrowser.Region.prototype = function() {
 				results = 'error';
 			}
 		}).done(function() {
-			return onDone(results);
+			done = onDone(results);
 		});
+		
+		return done;
 	},
 	projectToAlignment = function(caller, canvas, alignment) {
 		var
@@ -328,7 +332,6 @@ SyntenyBrowser.Alignment.prototype = function() {
 		this.drawStartY = drawStartY;
 		this.drawEndY = drawEndY;
 		
-		console.log("Drawing to canvas of width " + scriblCanvas.width);
 		ctx.drawImage(scriblCanvas, drawStartX, drawStartY);
 	}; 
 	
