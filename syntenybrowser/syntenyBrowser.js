@@ -154,21 +154,26 @@ SyntenyBrowser.Region.prototype = function() {
 		var
 		that = this,
 		seq1 = this.sequence(),
-		seq2 = region.sequence(),
-		alignment = runAligner(seq1, seq2, function(results) {
+		seq2 = region.sequence();
+		
+		return runAligner(seq1, seq2, function(results) {
 			if (results === 'error') {
 				console.log("Alignment failed");
 			}
 			else {
-				console.log("Got results " + results);
-				var
-				alignment = new SyntenyBrowser.Alignment(results, results),
-				canvas = that.owner.browser.draw();
-				
-				alignment.draw(canvas);
-				projectToAlignment(that, canvas, alignment);
-				projectToAlignment(region, canvas, alignment);
+				var alignResults = $.parseJSON(results);
+				if (alignResults.subject != null) {
+					var
+					alignment = new SyntenyBrowser.Alignment(alignResults.subject, alignResults.query),
+					canvas = that.owner.browser.draw();
+					
+					alignment.draw(canvas);
+					projectToAlignment(that, canvas, alignment);
+					projectToAlignment(region, canvas, alignment);
+				}
 			}
+			
+			return alignResults; // return back to ajax call
 		});
 	},
 	clear = function() {
@@ -199,7 +204,7 @@ SyntenyBrowser.Region.prototype = function() {
 		scriblCanvas = scribl.canvas,
 		ctx = scriblCanvas.getContext('2d'),
 		scaleStart = scribl.scale.min,
-		scaleEnd = scribl.scale.max, //FIXME: NOT the same as scaleStart + owner.sequence.length, throws off pxpernucs too
+		scaleEnd = scribl.scale.max,
 		region = this,
 		pxPerNucs = scribl.pixelsToNts(),
 		padding = 15,
@@ -232,7 +237,7 @@ SyntenyBrowser.Region.prototype = function() {
 				results = 'error';
 			}
 		}).done(function() {
-			onDone(results);
+			return onDone(results);
 		});
 	},
 	projectToAlignment = function(caller, canvas, alignment) {
@@ -242,29 +247,31 @@ SyntenyBrowser.Region.prototype = function() {
 		regionY1 = caller.owner.top + caller.drawStartY,
 		regionX2 = caller.drawEndX,
 		regionY2 = caller.owner.top + caller.drawEndY,
-		alignmentX1 = alignment.drawStartX,
+		alignmentX1 = alignment.drawStartX + 12,
 		alignmentY1 = alignment.drawStartY,
-		alignmentX2 = alignment.drawEndX,
+		alignmentX2 = alignment.drawEndX + 12,
 		alignmentY2 = alignment.drawEndY;
 		
-		ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
-		ctx.beginPath();
-		if (caller.owner.browser.browsers.indexOf(caller.owner)%2 == 0) { // project from bottom			
-			ctx.moveTo(regionX1, regionY2);
-			ctx.lineTo(alignmentX1, alignmentY1);
-			ctx.lineTo(alignmentX2, alignmentY1);
-			ctx.lineTo(regionX2, regionY2);
-			ctx.lineTo(regionX1, regionY2);
+		if (alignment.seq1.length > 0) { // don't project to empty alignment
+			ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+			ctx.beginPath();
+			if (caller.owner.browser.browsers.indexOf(caller.owner)%2 == 0) { // project from bottom			
+				ctx.moveTo(regionX1, regionY2);
+				ctx.lineTo(alignmentX1, alignmentY1);
+				ctx.lineTo(alignmentX2, alignmentY1);
+				ctx.lineTo(regionX2, regionY2);
+				ctx.lineTo(regionX1, regionY2);
+			}
+			else { // project from top
+				ctx.moveTo(regionX1, regionY1);
+				ctx.lineTo(alignmentX1, alignmentY2);
+				ctx.lineTo(alignmentX2, alignmentY2);
+				ctx.lineTo(regionX2, regionY1);
+				ctx.lineTo(regionX1, regionY1);
+			}
+			
+			ctx.fill();
 		}
-		else { // project from top
-			ctx.moveTo(regionX1, regionY1);
-			ctx.lineTo(alignmentX1, alignmentY2);
-			ctx.lineTo(alignmentX2, alignmentY2);
-			ctx.lineTo(regionX2, regionY1);
-			ctx.lineTo(regionX1, regionY1);
-		}
-		
-		ctx.fill();
 	};
 	
 	return {
@@ -278,7 +285,7 @@ SyntenyBrowser.Region.prototype = function() {
 SyntenyBrowser.Alignment = function(seq1, seq2) {
 	this.seq1 = seq1;
 	this.seq2 = seq2;
-	this.pxPerNuc = 10;
+	this.pxPerNuc = 20;
 };
 
 SyntenyBrowser.Alignment.prototype = function() {
@@ -291,7 +298,7 @@ SyntenyBrowser.Alignment.prototype = function() {
 		ctx = canvas.getContext('2d'),
 		scriblCanvas = document.createElement('canvas');
 		
-		scriblCanvas.width = 900;
+		scriblCanvas.width = 1000;
 		var
 		scribl = new Scribl(scriblCanvas, scriblCanvas.width),
 		seqlen = this.seq1.length > this.seq2.length ? this.seq1.length : this.seq2.length;
@@ -301,21 +308,18 @@ SyntenyBrowser.Alignment.prototype = function() {
 		
 		scribl.laneSizes = 18;
 		scribl.scale.off = true;
-		if (proposedWidth < scriblCanvas.width) {
-			//TODO
+		if (proposedWidth < scribl.width) { // only shrink
+			scribl.width = proposedWidth;
 		}
 		scribl.draw();
 		
-		//FIXME: use glyph.getPixelPositionX and glyph.getPixelPositionY for position calculations
-		//FIXME: seq.getHeight(), seq.getPixelLength()
 		var
 		scriblCanvas = scribl.canvas,
-		paddingX = 12,
 		paddingY = 25,
 		centerX = canvas.width / 2,
-		centerY = canvas.height / 2;
-		drawStartX = centerX - scriblCanvas.width/2 + paddingX,
-		drawEndX = drawStartX + scriblCanvas.width - paddingX,
+		centerY = canvas.height / 2,
+		drawStartX = (scriblCanvas.width / 2) - (scribl.width / 2),
+		drawEndX = drawStartX + seqGlyph1.getPixelLength(),
 		drawStartY = centerY - scriblCanvas.height/2,
 		drawEndY = drawStartY + scribl.getHeight() - paddingY;
 		
@@ -323,7 +327,9 @@ SyntenyBrowser.Alignment.prototype = function() {
 		this.drawEndX = drawEndX;
 		this.drawStartY = drawStartY;
 		this.drawEndY = drawEndY;
-		ctx.drawImage(scriblCanvas, drawStartX - paddingX, drawStartY);
+		
+		console.log("Drawing to canvas of width " + scriblCanvas.width);
+		ctx.drawImage(scriblCanvas, drawStartX, drawStartY);
 	}; 
 	
 	return {
