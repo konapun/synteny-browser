@@ -168,7 +168,7 @@ SyntenyBrowser.Region.prototype = function() {
 		
 		return sequence.substring(regionStart - seqStart, regionEnd - seqStart);
 	},
-	compareWith = function(region) {
+	compareWith = function(region, doneCallback) {
 		var
 		that = this,
 		seq1 = this.sequence(),
@@ -191,7 +191,7 @@ SyntenyBrowser.Region.prototype = function() {
 				}
 			}
 			
-			return alignResults; // return back to ajax call
+			return doneCallback(alignResults);
 		});
 	},
 	clear = function() {
@@ -249,7 +249,7 @@ SyntenyBrowser.Region.prototype = function() {
 		
 		$.ajax({
 			url: alignService,
-			async: false,
+			async: true,
 			success: function(data) {
 				results = data;
 			},
