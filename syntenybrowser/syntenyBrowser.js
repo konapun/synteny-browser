@@ -51,9 +51,13 @@ SyntenyBrowser.prototype = function() {
 		return this.width;
 	},
 	draw = function() {
-		var loadTop = true;
 		for (var i = 0, length = this.browsers.length; i < length; i++) {
-			this.browsers[i].draw();
+			var browser = this.browsers[i];
+			if (i%2 == 0) { // load on top
+				browser.scribl.addScale();
+			}
+			
+			browser.draw();
 		}
 		
 		return mergeCanvases(this);
@@ -215,6 +219,7 @@ SyntenyBrowser.Region.prototype = function() {
 	},
 	draw = function() {
 		var
+		region = this,
 		owner = this.owner,
 		start = this.start - owner.start,
 		end = this.end - owner.start,
@@ -223,7 +228,6 @@ SyntenyBrowser.Region.prototype = function() {
 		ctx = scriblCanvas.getContext('2d'),
 		scaleStart = scribl.scale.min,
 		scaleEnd = scribl.scale.max,
-		region = this,
 		pxPerNucs = scribl.pixelsToNts(),
 		padding = 15,
 		drawStartX = padding + (start * pxPerNucs),
@@ -231,13 +235,23 @@ SyntenyBrowser.Region.prototype = function() {
 		drawEndX = padding + (end * pxPerNucs),
 		drawEndY = 30;
 		
-		ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
-		ctx.fillRect(drawStartX, drawStartY, drawEndX - drawStartX, drawEndY - drawStartY);
-		
 		region.drawStartX = drawStartX;
 		region.drawEndX = drawEndX;
 		region.drawStartY = drawStartY;
 		region.drawEndY = drawEndY;
+		
+		if (owner.browser.browsers.indexOf(owner)%2 == 0) {
+			var offset = 0;
+			for (var i = 0, length = scribl.tracks.length; i < length; i++) {
+				offset += scribl.tracks[i].getHeight();
+			}
+			
+			region.drawEndY += offset - 24;
+			region.drawStartY = region.drawEndY - 20;
+		}
+		
+		ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+		ctx.fillRect(region.drawStartX, region.drawStartY, region.drawEndX - region.drawStartX, region.drawEndY - region.drawStartY);
 	},
 	
 	/* private functions */
