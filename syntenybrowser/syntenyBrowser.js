@@ -16,6 +16,11 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+/*
+* syntenyBrowser.js: Compare two regions of different sequences
+*
+* Author: Bremen Braun, 2013 for FlyExpress (http://www.flyexpress.net/)
+*/
 var SyntenyBrowser = function(div, opts) {
 	var canvas = document.createElement('canvas');
 	div.appendChild(canvas);
@@ -52,7 +57,8 @@ SyntenyBrowser.prototype = function() {
 	},
 	draw = function() {
 		for (var i = 0, length = this.browsers.length; i < length; i++) {
-			var browser = this.browsers[i];
+			var
+			browser = this.browsers[i];
 			if (i%2 == 0) { // load on top
 				browser.scribl.addScale();
 			}
@@ -84,19 +90,20 @@ SyntenyBrowser.prototype = function() {
 		for (var i = 0, len = caller.browsers.length; i < len; i++) {
 			var
 			browser = caller.browsers[i],
+			scribl = browser.scribl,
 			canvas = browser.scribl.canvas;
 			
 			if (i%2 == 0) { // draw on top
 				ctx.drawImage(canvas, 0, yTop);
 				browser.top = yTop;
 				
-				yTop += canvas.height;
+				yTop += scribl.getHeight();
 			}
 			else { // draw on bottom
 				ctx.drawImage(canvas, 0, yBottom);
 				browser.top = yBottom;
 				
-				yBottom -= canvas.height;
+				yBottom -= scribl.getHeight();
 			}
 		}
 		
@@ -139,9 +146,14 @@ SyntenyBrowser.Browser.prototype = function() {
 		
 		return region;
 	},
+	drawsOnTop = function() {
+		return this.browser.browsers.indexOf(this)%2 == 0;
+	},
 	draw = function() {
 		var scriblCanvas = this.scribl.canvas;
 		scriblCanvas.getContext('2d').clearRect(0, 0, scriblCanvas.width, scriblCanvas.height);
+		scriblCanvas.height = this.scribl.getHeight();
+		
 		this.scribl.draw();
 		for (var i = 0; i < this.regions.length; i++) {
 			this.regions[i].draw();
@@ -150,6 +162,7 @@ SyntenyBrowser.Browser.prototype = function() {
 	
 	return {
 		selectRegion: selectRegion,
+		drawsOnTop: drawsOnTop,
 		draw: draw
 	};
 }();
@@ -189,7 +202,7 @@ SyntenyBrowser.Region.prototype = function() {
 					alignment = new SyntenyBrowser.Alignment(alignResults.subject, alignResults.query),
 					canvas = that.owner.browser.draw();
 					
-					alignment.draw(canvas);
+					alignment.draw(canvas, that, region);
 					projectToAlignment(that, canvas, alignment);
 					projectToAlignment(region, canvas, alignment);
 				}
@@ -219,10 +232,20 @@ SyntenyBrowser.Region.prototype = function() {
 	},
 	draw = function() {
 		var
-		region = this,
-		owner = this.owner,
-		start = this.start - owner.start,
-		end = this.end - owner.start,
+		ctx = this.owner.scribl.canvas.getContext('2d'),
+		coords = calculateDrawCoords(this);
+		this.coords = coords;
+		
+		ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+		ctx.fillRect(coords.x1, coords.y1, coords.x2 - coords.x1, coords.y2 - coords.y1);
+	},
+	
+	/* private functions */
+	calculateDrawCoords = function(region) {
+		var
+		owner = region.owner,
+		start = region.start - owner.start,
+		end = region.end - owner.start,
 		scribl = owner.scribl,
 		scriblCanvas = scribl.canvas,
 		ctx = scriblCanvas.getContext('2d'),
@@ -235,26 +258,23 @@ SyntenyBrowser.Region.prototype = function() {
 		drawEndX = padding + (end * pxPerNucs),
 		drawEndY = 30;
 		
-		region.drawStartX = drawStartX;
-		region.drawEndX = drawEndX;
-		region.drawStartY = drawStartY;
-		region.drawEndY = drawEndY;
-		
-		if (owner.browser.browsers.indexOf(owner)%2 == 0) {
+		if (owner.drawsOnTop()) {
 			var offset = 0;
 			for (var i = 0, length = scribl.tracks.length; i < length; i++) {
 				offset += scribl.tracks[i].getHeight();
 			}
 			
-			region.drawEndY += offset - 24;
-			region.drawStartY = region.drawEndY - 20;
+			drawEndY += offset - 24;
+			drawStartY = drawEndY - 20;
 		}
 		
-		ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
-		ctx.fillRect(region.drawStartX, region.drawStartY, region.drawEndX - region.drawStartX, region.drawEndY - region.drawStartY);
+		return {
+			x1: drawStartX,
+			y1: drawStartY,
+			x2: drawEndX,
+			y2: drawEndY
+		};
 	},
-	
-	/* private functions */
 	runAligner = function(seq1, seq2, onDone) {
 		var
 		done,
@@ -279,21 +299,21 @@ SyntenyBrowser.Region.prototype = function() {
 	projectToAlignment = function(caller, canvas, alignment) {
 		var
 		ctx = canvas.getContext('2d'),
-		regionX1 = caller.drawStartX,
-		regionY1 = caller.owner.top + caller.drawStartY,
-		regionX2 = caller.drawEndX,
-		regionY2 = caller.owner.top + caller.drawEndY,
-		alignment1X1 = alignment.drawStartX1 + 12,
-		alignment1X2 = alignment.drawEndX1 + 12,
-		alignment2X1 = alignment.drawStartX2 + 12,
-		alignment2X2 = alignment.drawEndX2 + 12,
-		alignmentY1 = alignment.drawStartY,
-		alignmentY2 = alignment.drawEndY;
+		regionX1 = caller.coords.x1,
+		regionY1 = caller.owner.top + caller.coords.y1,
+		regionX2 = caller.coords.x2,
+		regionY2 = caller.owner.top + caller.coords.y2,
+		alignment1X1 = alignment.coords.startX1 + 12,
+		alignment1X2 = alignment.coords.endX1 + 12,
+		alignment2X1 = alignment.coords.startX2 + 12,
+		alignment2X2 = alignment.coords.endX2 + 12,
+		alignmentY1 = alignment.coords.startY,
+		alignmentY2 = alignment.coords.endY;
 		
 		if (alignment.seq1.length > 0) { // don't project to empty alignment
 			ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
 			ctx.beginPath();
-			if (caller.owner.browser.browsers.indexOf(caller.owner)%2 == 0) { // project from bottom			
+			if (caller.owner.drawsOnTop()) { // project from bottom			
 				ctx.moveTo(regionX1, regionY2);
 				ctx.lineTo(alignment1X1, alignmentY1);
 				ctx.lineTo(alignment1X2, alignmentY1);
@@ -331,7 +351,7 @@ SyntenyBrowser.Alignment.prototype = function() {
 	clear = function() {
 		//TODO i
 	},
-	draw = function(canvas) {
+	draw = function(canvas, region1, region2) {
 		var
 		ctx = canvas.getContext('2d'),
 		scriblCanvas = document.createElement('canvas');
@@ -355,20 +375,21 @@ SyntenyBrowser.Alignment.prototype = function() {
 		scriblCanvas = scribl.canvas,
 		paddingY = 25,
 		centerX = canvas.width / 2,
-		centerY = canvas.height / 2,
 		drawStartX1 = (scriblCanvas.width / 2) - (scribl.width / 2),
 		drawEndX1 = drawStartX1 + seqGlyph1.getPixelLength(),
 		drawStartX2 = drawStartX1,
 		drawEndX2 = drawStartX2 + seqGlyph2.getPixelLength(),
-		drawStartY = centerY - scriblCanvas.height/2,
+		drawStartY = region1.owner.scribl.getHeight() + (canvas.height - (region1.owner.scribl.getHeight() + region2.owner.scribl.getHeight()))/2 - (scriblCanvas.height / 2), //FIXME
 		drawEndY = drawStartY + scribl.getHeight() - paddingY;
 		
-		this.drawStartX1 = drawStartX1;
-		this.drawEndX1 = drawEndX1;
-		this.drawStartX2 = drawStartX2;
-		this.drawEndX2 = drawEndX2;
-		this.drawStartY = drawStartY;
-		this.drawEndY = drawEndY;
+		this.coords = {
+			startX1: drawStartX1,
+			endX1: drawEndX1,
+			startX2: drawStartX2,
+			endX2: drawEndX2,
+			startY: drawStartY,
+			endY: drawEndY
+		};
 		
 		ctx.drawImage(scriblCanvas, drawStartX1, drawStartY);
 	}; 
