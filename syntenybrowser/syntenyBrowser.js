@@ -21,6 +21,11 @@
 *
 * Author: Bremen Braun, 2013 for FlyExpress (http://www.flyexpress.net/)
 */
+/*
+* syntenyBrowser.js: Compare two regions of different sequences
+*
+* Author: Bremen Braun, 2013 for FlyExpress (http://www.flyexpress.net/)
+*/
 var SyntenyBrowser = function(div, opts) {
 	var canvas = document.createElement('canvas');
 	div.appendChild(canvas);
@@ -60,6 +65,7 @@ SyntenyBrowser.prototype = function() {
 			var
 			browser = this.browsers[i];
 			if (i%2 == 0) { // load on top
+				browser.scribl.scale.positions = []; // remove the old scale
 				browser.scribl.addScale();
 			}
 			
@@ -211,6 +217,15 @@ SyntenyBrowser.Region.prototype = function() {
 			return doneCallback(alignResults);
 		});
 	},
+	projectWith = function(region) {
+		var
+		alignment = new SyntenyBrowser.Alignment(this.sequence(), region.sequence()),
+		canvas = this.owner.browser.draw();
+		
+		alignment.draw(canvas, this, region);
+		projectToAlignment(this, canvas, alignment);
+		projectToAlignment(region, canvas, alignment);
+	},
 	clear = function() {
 		var
 		owner = this.owner,
@@ -253,19 +268,27 @@ SyntenyBrowser.Region.prototype = function() {
 		scaleEnd = scribl.scale.max,
 		pxPerNucs = scribl.pixelsToNts(),
 		padding = 15,
-		drawStartX = padding + (start * pxPerNucs),
-		drawStartY = 10,
+		drawStartX = padding + (start * pxPerNucs), //FIXME: scale.start is not the same as owner.start
 		drawEndX = padding + (end * pxPerNucs),
-		drawEndY = 30;
+		drawEndY = 30,
+		drawStartY = drawEndY - 14;
 		
 		if (owner.drawsOnTop()) {
 			var offset = 0;
 			for (var i = 0, length = scribl.tracks.length; i < length; i++) {
-				offset += scribl.tracks[i].getHeight();
+				var track = scribl.tracks[i];
+				
+				if (!track.hide) {
+					offset += scribl.tracks[i].getHeight();
+					offset += scribl.trackBuffer;
+				}
 			}
+			//offset += scribl.trackBuffer;
 			
-			drawEndY += offset - 24;
-			drawStartY = drawEndY - 20;
+			drawEndY = scribl.getHeight() - 57;
+			drawStartY = drawEndY - 14;
+			//drawEndY += offset - 18;
+			//drawStartY = drawEndY - 14;
 		}
 		
 		return {
@@ -335,6 +358,7 @@ SyntenyBrowser.Region.prototype = function() {
 	return {
 		sequence: sequence,
 		compareWith: compareWith,
+		projectWith: projectWith,
 		clear: clear,
 		draw: draw
 	};
@@ -379,7 +403,7 @@ SyntenyBrowser.Alignment.prototype = function() {
 		drawEndX1 = drawStartX1 + seqGlyph1.getPixelLength(),
 		drawStartX2 = drawStartX1,
 		drawEndX2 = drawStartX2 + seqGlyph2.getPixelLength(),
-		drawStartY = region1.owner.scribl.getHeight() + (canvas.height - (region1.owner.scribl.getHeight() + region2.owner.scribl.getHeight()))/2 - (scriblCanvas.height / 2), //FIXME
+		drawStartY = region1.owner.scribl.getHeight() + (canvas.height - (region1.owner.scribl.getHeight() + region2.owner.scribl.getHeight()))/2 - (scriblCanvas.height / 4), //FIXME
 		drawEndY = drawStartY + scribl.getHeight() - paddingY;
 		
 		this.coords = {
