@@ -16,16 +16,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*
-* syntenyBrowser.js: Compare two regions of different sequences
-*
-* Author: Bremen Braun, 2013 for FlyExpress (http://www.flyexpress.net/)
-*/
-/*
-* syntenyBrowser.js: Compare two regions of different sequences
-*
-* Author: Bremen Braun, 2013 for FlyExpress (http://www.flyexpress.net/)
-*/
 var SyntenyBrowser = function(div, opts) {
 	var canvas = document.createElement('canvas');
 	div.appendChild(canvas);
@@ -259,33 +249,31 @@ SyntenyBrowser.Region.prototype = function() {
 	calculateDrawCoords = function(region) {
 		var
 		owner = region.owner,
-		start = region.start - owner.start,
-		end = region.end - owner.start,
 		scribl = owner.scribl,
 		scriblCanvas = scribl.canvas,
 		ctx = scriblCanvas.getContext('2d'),
 		scaleStart = scribl.scale.min,
 		scaleEnd = scribl.scale.max,
-		pxPerNucs = scribl.pixelsToNts(),
+		basesPerPx = scriblCanvas.width / (scaleEnd - scaleStart),
 		padding = 15,
-		drawStartX = padding + (start * pxPerNucs), //FIXME: scale.start is not the same as owner.start
-		drawEndX = padding + (end * pxPerNucs),
+		drawStartX = padding + ((region.start - scaleStart) * basesPerPx),
+		drawEndX = padding + ((region.end - scaleStart) * basesPerPx),
 		drawEndY = 30,
 		drawStartY = drawEndY - 14;
 		
+		console.log("(start, end) = (" + drawStartX + ", " + drawEndX + ")");
 		if (owner.drawsOnTop()) {
 			var offset = 0;
 			for (var i = 0, length = scribl.tracks.length; i < length; i++) {
 				var track = scribl.tracks[i];
 				
-				if (!track.hide) {
+				if (track.hide) {
 					offset += scribl.tracks[i].getHeight();
-					offset += scribl.trackBuffer;
 				}
+				if (i > 0) offset += scribl.trackBuffer;
 			}
-			//offset += scribl.trackBuffer;
 			
-			drawEndY = scribl.getHeight() - 57;
+			drawEndY = scribl.getHeight() - offset;
 			drawStartY = drawEndY - 14;
 			//drawEndY += offset - 18;
 			//drawStartY = drawEndY - 14;
