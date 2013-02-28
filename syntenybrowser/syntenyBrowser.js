@@ -26,6 +26,7 @@ var SyntenyBrowser = function(div, opts) {
 		width = opts.width || width;
 	}
 	
+	//FIXME: move some of these to the prototype
 	this.canvas = canvas;
 	this.syntenyBrowser = div;
 	this.browsers = [];
@@ -261,7 +262,6 @@ SyntenyBrowser.Region.prototype = function() {
 		drawEndY = 30,
 		drawStartY = drawEndY - 14;
 		
-		console.log("(start, end) = (" + drawStartX + ", " + drawEndX + ")");
 		if (owner.drawsOnTop()) {
 			var offset = 0;
 			for (var i = 0, length = scribl.tracks.length; i < length; i++) {
