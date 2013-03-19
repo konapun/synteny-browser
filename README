@@ -2,27 +2,11 @@ This is a sequence region comparison visualization which uses the Scribl HTML5 c
 
 Files
 ------
+vendor/Scribl.1.1.3.min.js: Library which powers the synteny browser
+syntenybrowser.js: The synteny browser
+script/blast.sh: Script to use in conjunction with your own 'pairwise_align.php' hosted on your server (this is only required to use the "region.compareWith" function)
+example/test.html: Short example of how to use the synteny browser
 
-Example
--------
-(HTML)
-<html>
-	<head>
-		<title>Region Comparison</title>
-	</head>
-	<body>
-		<div id="browser"></div>
-	</body>
-</html>
-
-(Javascript)
-var browser = new SyntenyBrowser(document.getElementById('browser'));
-var seq1 = browser.addSequence(nucleotides1, seq1start);
-var seq2 = browser.addSequence(nucleotides2, seq2start);
-
-browser.draw();
-
-var region1 = seq1.selectRegion(200, 200);
-var region2 = seq2.selectRegtion(1, 100);
-
-region1.compareWith(region2); // does alignment and displays result
+TODO
+----
+1) Fix upper region hilighting so that it consistently falls on the sequence scale

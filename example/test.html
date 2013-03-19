@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Region Comparison</title>
+		<script type="text/javascript" src="../vendor/Scribl.1.1.3.min.js"></script>
+		<script type="text/javascript" src="../syntenybrowser.js"></script>
+	</head>
+	<body>
+		<div id="browser"></div>
+		
+		<script type="text/javascript">
+			var browser = new SyntenyBrowser(document.getElementById('browser'));
+			var seq1 = browser.addSequence('ACTCATGCTAGTGCTAGCTAGCTAGCTAGCTAGCTAGCT', 1);
+			var seq2 = browser.addSequence('ATGCTAGCTAGTGGGTGGATCGTGATGCTAGTAGCTAGCTAGCTAGCTAGATATGCCGTACGTCGTAG', 10);
+			
+			browser.draw();
+			
+			var region1 = seq1.selectRegion(5, 12); // SelectRegion hilights the position on the sequence scale
+			var region2 = seq2.selectRegion(34, 41);
+			
+			// let's assume region1 and region2 are known to by syntenic
+			region1.projectWith(region2); // Project sequence contained at these two regions. You could also project the alignment by hosting a file 'pairwise_align.php' which provides the alignment (using the included script/blast.sh bash script) and calling "compareWith"
+		</script>
+	</body>
+</html>

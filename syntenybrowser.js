@@ -26,7 +26,6 @@ var SyntenyBrowser = function(div, opts) {
 		width = opts.width || width;
 	}
 	
-	//FIXME: move some of these to the prototype
 	this.canvas = canvas;
 	this.syntenyBrowser = div;
 	this.browsers = [];
@@ -90,7 +89,7 @@ SyntenyBrowser.prototype = function() {
 			scribl = browser.scribl,
 			canvas = browser.scribl.canvas;
 			
-			if (i%2 == 0) { // draw on top
+			if (browser.drawsOnTop()) {
 				ctx.drawImage(canvas, 0, yTop);
 				browser.top = yTop;
 				
