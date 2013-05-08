@@ -11,9 +11,4 @@ Files
 
 TODO
 ----
-1) Fix upper region hilighting so that it consistently falls on the sequence scale
-
-Credits
--------
-Credits to Chase Miller, who created the wonderful Scribl biological charting library,
-and to FlyExpress (http://www.flyexpress.net/) for sponsoring development of this project
+  * Fix upper region hilighting so that it consistently falls on the sequence scale
