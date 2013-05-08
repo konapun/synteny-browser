@@ -1,5 +1,4 @@
 This is a sequence region comparison visualization which uses the Scribl HTML5 canvas library (http://chmille4.github.com/Scribl/).
-If you'd like to see a screenshot of this library in action, please refer to example/projection.png
 
 ![example](example/projection.png "example")
 Files
