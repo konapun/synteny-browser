@@ -3,11 +3,11 @@ This is a sequence region comparison visualization which uses the Scribl HTML5 c
 ![example](example/projection.png "example")
 Files
 ------
-vendor/Scribl.1.1.3.min.js: Library which powers the synteny browser
-syntenybrowser.js: The synteny browser
-script/blast.sh: Script to use in conjunction with your own 'pairwise_align.php' hosted on your server (this is only required to use the "region.compareWith" function)
-example/test.html: Short example of how to use the synteny browser
-example/projection.php: Screenshot of the synteny browser used in a production environment
+  * vendor/Scribl.1.1.3.min.js: Library which powers the synteny browser
+  * syntenybrowser.js: The synteny browser
+  * script/blast.sh: Script to use in conjunction with your own 'pairwise_align.php' hosted on your server (this is only required to use the "region.compareWith" function)
+  * example/test.html: Short example of how to use the synteny browser
+  * example/projection.png: Screenshot of the synteny browser used in a production environment
 
 TODO
 ----
