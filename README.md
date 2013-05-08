@@ -1,6 +1,7 @@
 This is a sequence region comparison visualization which uses the Scribl HTML5 canvas library (http://chmille4.github.com/Scribl/).
 If you'd like to see a screenshot of this library in action, please refer to example/projection.png
 
+![example](https://github.com/konapun/synteny-browser/blob/master/example/projection.png "example")
 Files
 ------
 vendor/Scribl.1.1.3.min.js: Library which powers the synteny browser
