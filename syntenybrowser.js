@@ -407,7 +407,7 @@ SyntenyBrowser.Alignment.prototype = function() {
 	}; 
 	
 	return {
-		clear: clear,
+		//clear: clear,
 		draw: draw
 	};
 }();
